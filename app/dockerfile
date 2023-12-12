@@ -1,14 +1,10 @@
 FROM python:3.10-slim
 
+WORKDIR /env_project
 
-EXPOSE 8000
-WORKDIR /app
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends netcat && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update
 
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-COPY . ./
+COPY . ./app

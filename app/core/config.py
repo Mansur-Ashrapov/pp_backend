@@ -3,13 +3,15 @@ from datetime import datetime, timedelta
 
 
 class AppSettings(BaseModel):
-    authjwt_secret_key: str = (
+    secret_key: str = (
         "0lCU8ghbHhKCKFBw3UnVlQUyHSXOIKfZN2pdlUoDRkpY6TM6kleGveuIetQo9zS1"
     )
-    authjwt_access_token_expires: timedelta = timedelta(hours=1)
-    authjwt_refresh_token_expires: timedelta = timedelta(days=30)
+    access_token_expires: timedelta = timedelta(days=1)
+    algorithm: str = "HS256"
 
-    database_url: str = "someUrl"
+    database_url: str = "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
 
-    class Config:
-        env_file = '.env'
+    # class Config:
+    #     env_file = '.env'
+
+config = AppSettings()

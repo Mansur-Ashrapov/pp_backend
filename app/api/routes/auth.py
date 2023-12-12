@@ -1,86 +1,48 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi_jwt_auth import AuthJWT
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.exceptions import HTTPException
+from starlette import status
+from jose import jwt, JWTError
+from asyncpg.exceptions import UniqueViolationError
 
 from app.db.exceptions import EntityDoesNotExist, EntityAlreadyExist
 from app.api.dependecies.database import get_repository
-from app.models.schemas.auth import Login, Token
+from app.models.schemas.auth import Token
 from app.models.schemas.users import UserInDB, UserRegister
 from app.db.repositories.users import UserRepository
-from app.services.security import verify_password
+from app.services.security import verify_password, get_password_hash, create_access_token, decode_token
 
 
 router = APIRouter()
 
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 
-@router.post("/login", response_model=Login)
+@router.post("/token", response_model=Token)
 async def login(
-        user: Token,
         users_repo: UserRepository = Depends(get_repository(UserRepository)),
-        authorize: AuthJWT = Depends()
+        form_data: OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm)
     ):
     """Вход на сайт
 
     Raises:
-        HTTPException: 404 пользователь с данным username не найден
-        HTTPException: 401 плохой username or password
+        HTTPException: 400 плохой username or password
 
     Returns:
-        Login: содержит токены авторизации
+        Token: содержит токены авторизации
     """
     try:
-        db_user = await users_repo.get_user_by_username(user.username)
+        db_user = await users_repo.get_user_by_username(form_data.username)
     except EntityDoesNotExist:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad username or password")
     
-    if user.username and user.password:
-        if db_user and verify_password(user.password, db_user.password_hash):
-            access_token = authorize.create_access_token(subject=user.username)
-            refresh_token = authorize.create_refresh_token(subject=user.username)
-            return {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "token_type": "bearer",
-            }
-    raise HTTPException(status_code=401, detail="Bad username or password")
+    if not verify_password(form_data.password, db_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad username or password")
+    
+    token = create_access_token(db_user.username, db_user.id)
+    return {'access_token': token, 'token_type': 'bearer'}
+    
 
-
-@router.post("/refresh", response_model=Login)
-async def refresh(authorize: AuthJWT = Depends()):
-    """ Обновить токены авторизации
-
-    Args:
-        authorize (AuthJWT): Необходимо иметь токены авторизации.
-
-    Returns:
-        Login: содержит токены авторизации
-    """
-    authorize.jwt_refresh_token_required()
-
-    current_user = authorize.get_jwt_subject()
-    new_refresh_token = authorize.create_refresh_token(subject=current_user)
-    new_access_token = authorize.create_access_token(subject=current_user)
-    return {"access_token": new_access_token, "refresh_token": new_refresh_token, "token_type": "bearer" }
-
-
-@router.get("/me", response_model=UserInDB, response_model_exclude={"password_hash"})
-async def protected(authorize: AuthJWT = Depends(), users_repo: UserRepository = Depends(get_repository(UserRepository))):
-    """ Получить данные о пользователе
-
-    Args:
-        authorize (AuthJWT): Необходимо иметь токены авторизации.
-
-    Returns:
-        UserInDB: данные о пользователе
-    """
-    authorize.jwt_required()
-
-    current_user = authorize.get_jwt_subject()
-    user = await users_repo.get_user_by_username(current_user)
-    return user
-
-
-@router.post("/register")
+@router.post("/")
 async def register(user: UserRegister, users_repo: UserRepository = Depends(get_repository(UserRepository))):
     """ Зарегистрировать пользователя 
 
@@ -89,11 +51,37 @@ async def register(user: UserRegister, users_repo: UserRepository = Depends(get_
     """
     new_user = UserRegister(
         username=user.username,
-        password=user.password,
+        password=get_password_hash(user.password),
+        fullname=user.fullname,
         email=user.email,
     )
     try:
         await users_repo.create_user(new_user)
-    except EntityAlreadyExist:
-        raise HTTPException(status_code=401, detail="User with this email or username already exists")
+    except UniqueViolationError:
+        raise HTTPException(status_code=400, detail="User with this email or username already exists")
     return {"status_code": 201}
+
+
+@router.get("/", response_model=UserInDB, response_model_exclude={"password_hash"})
+async def protected(
+        users_repo: UserRepository = Depends(get_repository(UserRepository)),
+        token: OAuth2PasswordBearer = Depends(oauth2_bearer)
+    ):
+    """ Получить данные о пользователе
+
+    Args:
+        token: Необходимо иметь токены авторизации.
+
+    Returns:
+        UserInDB: данные о пользователе
+    """
+    try:
+        payload = decode_token(token)
+        if not payload:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
+        user = await users_repo.get_user_by_username(payload['username'])
+        return user
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
+    except EntityDoesNotExist:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User does not exist")

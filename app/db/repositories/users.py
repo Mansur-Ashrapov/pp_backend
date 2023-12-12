@@ -4,6 +4,7 @@ from app.db.exceptions import EntityDoesNotExist, EntityAlreadyExist
 from app.db.tables import User as UserModel
 from app.db.repositories.base import BaseRepository
 from app.models.schemas.users import UserRegister, UserInDB
+from app.db.utils import create_id_len_five
 
 
 class UserRepository(BaseRepository):
@@ -53,15 +54,16 @@ class UserRepository(BaseRepository):
         raise EntityDoesNotExist(f"user with email {email} does not exist")
 
     async def create_user(self, user: UserRegister) -> None:
-        user_email = await self.get_user_by_email(user.email)
-        if user_email:
-            raise EntityAlreadyExist("This email is already used")
-
-        user_username = await self.get_user_by_email(user.user_username)
-        if user_username:
-            raise EntityAlreadyExist("This username is already used")
+        while True:
+            user_id = create_id_len_five()
+            try: 
+                await self.get_user_by_id(user_id)
+                continue
+            except EntityDoesNotExist:
+                break
 
         await self.database.execute(UserModel.insert().values(
+            id=user_id,
             username=user.username,
             fullname=user.fullname,
             password_hash=user.password,
