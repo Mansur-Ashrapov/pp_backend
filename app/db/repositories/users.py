@@ -1,9 +1,10 @@
 from typing import Optional
+from pydantic import BaseModel
 
 from app.db.exceptions import EntityDoesNotExist, EntityAlreadyExist
 from app.db.tables import User as UserModel
 from app.db.repositories.base import BaseRepository
-from app.models.schemas.users import UserRegister, UserInDB
+from app.models.schemas.users import UserRegister, UserInDB, UserUpdatePassword, UserUpdateFullName
 from app.db.utils import create_id_len_five
 
 
@@ -53,6 +54,9 @@ class UserRepository(BaseRepository):
             )
         raise EntityDoesNotExist(f"user with email {email} does not exist")
 
+    async def update(self, user_data: BaseModel, user_id: str):
+        await self.database.execute(UserModel.update().where(UserModel.c.id == user_id).values(**user_data.dict()))
+
     async def create_user(self, user: UserRegister) -> None:
         while True:
             user_id = create_id_len_five()
@@ -70,3 +74,5 @@ class UserRepository(BaseRepository):
             email=user.email   
         ))
     
+    async def delete(self, user_id: str):
+        await self.database.execute(UserModel.delete().where(UserModel.c.id == user_id))
