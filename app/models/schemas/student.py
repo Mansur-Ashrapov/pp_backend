@@ -9,3 +9,7 @@ class Student(BaseModel):
 class StudentIn(BaseModel):
     fullname: str
     class_id: int
+
+class StudentUpdate(BaseModel):
+    id: str
+    fullname: str

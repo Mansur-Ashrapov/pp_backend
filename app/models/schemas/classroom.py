@@ -9,7 +9,10 @@ class Class(BaseModel):
 
 class ClassIn(BaseModel):
     name: str
-    teacher_id: str
 
 class ClassOut(Class):
     students: list[Student]
+
+class ClassUpdate(Class):
+    id: int
+    name: str

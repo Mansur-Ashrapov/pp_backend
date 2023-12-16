@@ -7,25 +7,27 @@ from app.models.schemas.test import TestIn, Test
 
 class TestRepository(BaseRepository):
     async def get_test_by_id(self, id: int) -> Test:
-        test = await self.database.fetch_one(TestModel.select().where(TestModel.c.id == id))
+        test = await self.database.fetch_one(TestModel.select().where(TestModel.c.id == int(id)))
         if test:
             return Test(id=test.id, name=test.name, answers=test.answers, teacher_id=test.teacher_id)
         raise EntityDoesNotExist(f"Test with id {id} does not exist")
 
     async def get_test_by_teacher_id(self, teacher_id: int) -> list[Test]:
-        tests = await self.database.fetch_all(TestModel.c.teacher_id == teacher_id)
+        tests = await self.database.fetch_all(TestModel.select().where(TestModel.c.teacher_id == teacher_id))
         return [Test(id=test.id, name=test.name, answers=test.answers, teacher_id=test.teacher_id) for test in tests]
 
     async def delete(self, id: int) -> None:
+        await self.get_test_by_id(id)
         await self.database.execute(TestModel.delete().where(TestModel.c.id == id))
     
     async def update(self, id: int, test: BaseModel) -> None:
+        await self.get_test_by_id(id)
         await self.database.execute(TestModel.update().where(TestModel.c.id == id).values(**test.dict()))
 
-    async def create_test(self, test_data: TestIn) -> None:
+    async def create_test(self, test_data: TestIn, teacher_id: str) -> None:
         await self.database.execute(TestModel.insert().values(
             name=test_data.name,
             answers=test_data.answers,
-            teacher_id=test_data.teacher_id
+            teacher_id=teacher_id
         ))
     

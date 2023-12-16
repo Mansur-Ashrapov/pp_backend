@@ -15,13 +15,15 @@ class StudentRepository(BaseRepository):
         raise EntityDoesNotExist(f"Student with id {id} does not exist")
 
     async def get_students_by_class_id(self, class_id: int) -> list[Student]:
-        students = await self.database.fetch_all(StudentModel.c.class_id == class_id)
+        students = await self.database.fetch_all(StudentModel.select().where(StudentModel.c.class_id == class_id))
         return [Student(id=student.id, fullname=student.fullname, class_id=student.class_id) for student in students]
 
     async def delete(self, id: str) -> None:
+        await self.get_student_by_id(id)
         await self.database.execute(StudentModel.delete().where(StudentModel.c.id == id))
 
     async def update(self, id: str, student: BaseModel):
+        await self.get_student_by_id(id)
         await self.database.execute(StudentModel.update().where(StudentModel.c.id == id).values(**student.dict()))
 
     async def create_student(self, student_data: StudentIn) -> None:

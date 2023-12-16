@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.exceptions import HTTPException
 from starlette import status
-from jose import jwt, JWTError
 from asyncpg.exceptions import UniqueViolationError
 
 from app.db.exceptions import EntityDoesNotExist
@@ -62,11 +61,10 @@ async def register(user: UserRegister, users_repo: UserRepository = Depends(get_
 
 
 @router.delete("/")
-async def register(token: OAuth2PasswordBearer = Depends(get_oauth2()), users_repo: UserRepository = Depends(get_repository(UserRepository))):
-    """ Зарегистрировать пользователя 
+async def delete(token: OAuth2PasswordBearer = Depends(get_oauth2()), users_repo: UserRepository = Depends(get_repository(UserRepository))):
+    """ Удалить пользователя
 
-    Args:
-        user (UserRegister): Данные для создания пользователя
+        нужно только отправить запрос DELETE с токеном
     """
     try:
         user = await get_user_from_payload(token, users_repo)
@@ -77,7 +75,7 @@ async def register(token: OAuth2PasswordBearer = Depends(get_oauth2()), users_re
 
 
 @router.get("/", response_model=User)
-async def protected(
+async def get_info_about_user(
         users_repo: UserRepository = Depends(get_repository(UserRepository)),
         token: OAuth2PasswordBearer = Depends(get_oauth2())
     ):
@@ -87,7 +85,7 @@ async def protected(
         token: Необходимо иметь токены авторизации.
 
     Returns:
-        UserInDB: данные о пользователе
+        User: данные о пользователе
     """
     try:
         user = await get_user_from_payload(token, users_repo)
@@ -101,6 +99,8 @@ async def update_fullname_user(
         users_repo: UserRepository = Depends(get_repository(UserRepository)),
         token: OAuth2PasswordBearer = Depends(get_oauth2())
     ):
+    """Поменять ФИО преподавателя
+    """
     try:
         user = await get_user_from_payload(token, users_repo)
         await users_repo.update(user_update, user.id)
@@ -110,14 +110,17 @@ async def update_fullname_user(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     
 @router.put("/password")
-async def update_fullname_user(
+async def update_password_user(
         user_update: UserUpdatePassword,
         users_repo: UserRepository = Depends(get_repository(UserRepository)),
         token: OAuth2PasswordBearer = Depends(get_oauth2())
     ):
+    """
+    Поменять пароль пользователя
+    """
     try:
         user = await get_user_from_payload(token, users_repo)
-        user_update = UserUpdatePasswordHash(get_password_hash(user_update.password))
+        user_update = UserUpdatePasswordHash(password_hash=get_password_hash(user_update.password))
         await users_repo.update(user_update, user.id)
     except EntityDoesNotExist:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User does not exist")

@@ -13,15 +13,17 @@ class ClassRepository(BaseRepository):
         raise EntityDoesNotExist(f"Class with id {id} does not exist")
     
     async def delete(self, id: int) -> None:
+        await self.get_class_by_id(id)
         await self.database.execute(ClassModel.delete().where(ClassModel.c.id == id))
     
     async def update(self, id: int, class_data: BaseModel) -> None:
+        await self.get_class_by_id(id)
         await self.database.execute(ClassModel.update().where(ClassModel.c.id == id).values(**class_data.dict()))
 
     async def get_classes_by_teacher_id(self, teacher_id: str) -> list[Class]:
-        classes = await self.database.fetch_all(ClassModel.c.teacher_id == teacher_id)
+        classes = await self.database.fetch_all(ClassModel.select().where(ClassModel.c.teacher_id == teacher_id))
         return [Class(id=class_data.id, name=class_data.name, teacher_id=class_data.teacher_id) for class_data in classes]
 
-    async def create_class(self, class_data: ClassIn) -> None:
-        await self.database.execute(ClassModel.insert().values(**class_data.dict()))
-    
+    async def create_class(self, class_data: ClassIn, teacher_id: str) -> None:
+        id = await self.database.execute(ClassModel.insert().values(**class_data.dict(), teacher_id=teacher_id))
+        return id

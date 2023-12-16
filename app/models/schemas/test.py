@@ -10,4 +10,8 @@ class Test(BaseModel):
 class TestIn(BaseModel):
     name: str
     answers: list[str]
-    teacher_id: int
+    
+class TestUpdate(BaseModel):
+    id: int
+    name: str
+    answers: list[str]

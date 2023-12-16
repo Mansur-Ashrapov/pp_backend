@@ -38,7 +38,7 @@ async def get_user_from_payload(token, users_repo: UserRepository) -> User:
         if not payload:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
         user = await users_repo.get_user_by_username(payload['username'])
-        return User(**user.dict(exclude='password_hash'))
+        return User(**user.dict())
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
     except EntityDoesNotExist:

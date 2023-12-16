@@ -55,6 +55,7 @@ class UserRepository(BaseRepository):
         raise EntityDoesNotExist(f"user with email {email} does not exist")
 
     async def update(self, user_data: BaseModel, user_id: str):
+        await self.get_user_by_id(id)
         await self.database.execute(UserModel.update().where(UserModel.c.id == user_id).values(**user_data.dict()))
 
     async def create_user(self, user: UserRegister) -> None:
@@ -75,4 +76,5 @@ class UserRepository(BaseRepository):
         ))
     
     async def delete(self, user_id: str):
+        await self.get_user_by_id(id)
         await self.database.execute(UserModel.delete().where(UserModel.c.id == user_id))
