@@ -5,6 +5,7 @@ services:
     image: postgres:11.5-alpine
     ports:
       - "5432:5432"
+    restart: on-failure
     env_file:
       "db.env"
     volumes:
