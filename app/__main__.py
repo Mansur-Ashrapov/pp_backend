@@ -2,11 +2,9 @@ import databases
 import sqlalchemy
 import uvicorn
 
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 
 from app.db.tables import metadata
 from app.core.config import config
