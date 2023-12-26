@@ -1,4 +1,3 @@
-import asyncio
 import cv2 
 import numpy as np
 import base64
@@ -12,23 +11,16 @@ from app.db.exceptions import EntityDoesNotExist
 from app.api.dependecies.database import get_repository
 from app.api.dependecies.auth import get_oauth2
 
-from app.models.schemas.auth import Token
-from app.models.schemas.student import Student, StudentIn
-from app.models.schemas.test import Test, TestIn
 from app.models.schemas.testresult import TestResult, TestBlank
-from app.models.schemas.classroom import Class, ClassIn, ClassOut
-from app.models.schemas.users import User
 
 from app.db.repositories.classroom import ClassRepository
-from app.db.repositories.student import StudentRepository
 from app.db.repositories.test import TestRepository
 from app.db.repositories.testresult import TestResultRepository
 from app.db.repositories.users import UserRepository
-from fastapi.responses import FileResponse
 
 from app.omr import omr, create_test_sheets
 
-from app.services.security import get_password_hash, get_user_from_payload
+from app.services.security import get_user_from_payload
 
 router = APIRouter()
 
@@ -71,7 +63,10 @@ async def recognize_test_and_create_result(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ForeignKeyViolationError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Видимо не правильно считался код")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
     
+
 @router.post("/get_sheet")
 async def get_blank_test(
         blank_data: TestBlank,
@@ -94,4 +89,4 @@ async def get_blank_test(
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except EntityDoesNotExist as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])

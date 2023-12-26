@@ -30,8 +30,8 @@ async def login(
     """
     try:
         db_user = await users_repo.get_user_by_username(form_data.username)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad username or password")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.args[0])
     
     if not verify_password(form_data.password, db_user.password_hash):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad username or password")
@@ -90,8 +90,8 @@ async def get_info_about_user(
     try:
         user = await get_user_from_payload(token, users_repo)
         return user
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.args[0])
     
 @router.put("/fullname")
 async def update_fullname_user(
@@ -104,8 +104,8 @@ async def update_fullname_user(
     try:
         user = await get_user_from_payload(token, users_repo)
         await users_repo.update(user_update, user.id)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.args[0])
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     
@@ -122,8 +122,8 @@ async def update_password_user(
         user = await get_user_from_payload(token, users_repo)
         user_update = UserUpdatePasswordHash(password_hash=get_password_hash(user_update.password))
         await users_repo.update(user_update, user.id)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.args[0])
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     

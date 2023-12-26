@@ -35,8 +35,8 @@ async def get_classes(
         return [ClassOut(**class_data.dict(), students=students) for students, class_data in zip(out, classes)]
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="class does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
 
 @router.get('/{class_id}', response_model=ClassOut)
 async def get_classes(
@@ -54,8 +54,8 @@ async def get_classes(
         return ClassOut(**class_data.dict(), students=students)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="class does not exist")    
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])    
 
 @router.delete('/{class_id}')
 async def get_classes(
@@ -70,8 +70,8 @@ async def get_classes(
         await class_repo.delete(class_id)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="class does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
         
         
 @router.post('/')
@@ -103,6 +103,6 @@ async def update_class(
         await class_repo.update(class_data.id, class_data)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="class does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
     

@@ -60,8 +60,8 @@ async def get_student(
         return student
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="student does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
         
 @router.delete('/{student_id}')
 async def delete(
@@ -76,8 +76,8 @@ async def delete(
         await students_repo.delete(student_id)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="student does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
     except Exception as e:
         print(e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -111,8 +111,8 @@ async def update_student(
         await students_repo.update(student_data.id, student_data)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="student does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
     except ForeignKeyViolationError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Class with id {student_data.class_id} not found")
     return {'status_code': status.HTTP_201_CREATED}

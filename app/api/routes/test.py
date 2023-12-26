@@ -49,8 +49,8 @@ async def change_test(
         await test_repo.update(test.id, test)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="test does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
     except UndefinedObjectError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Такого теста не существует")
     return {'status_code': status.HTTP_201_CREATED}
@@ -70,8 +70,8 @@ async def get_test_by_id(
         return test
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="test does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
             
 @router.delete('/{test_id}')
 async def delete(
@@ -86,8 +86,8 @@ async def delete(
         await test_repo.delete(test_id)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except EntityDoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="test does not exist")
+    except EntityDoesNotExist as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
     except Exception as e:
         print(e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
